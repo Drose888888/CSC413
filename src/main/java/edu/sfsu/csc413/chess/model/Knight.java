@@ -1,5 +1,6 @@
 package edu.sfsu.csc413.chess.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,8 +23,39 @@ public class Knight extends Piece {
         super(color, PieceType.KNIGHT);
     }
 
+
     @Override
     public List<Move> pseudoLegalMoves(Board board, Position from) {
-        throw new UnsupportedOperationException("M2: implement Knight.pseudoLegalMoves");
+        List<Move> moves = new ArrayList<>();
+
+        int[][] jumps = {
+                {2, 1},
+                {2, -1},
+                {-2, 1},
+                {-2, -1},
+                {1, 2},
+                {1, -2},
+                {-1, 2},
+                {-1, -2}
+        };
+
+        for (int[] jump : jumps) {
+            int file = from.file() + jump[0];
+            int rank = from.rank() + jump[1];
+
+            if (file >= 0 && file < 8 && rank >= 0 && rank < 8) {
+                Position to = new Position(file, rank);
+                Piece target = board.pieceAt(to);
+
+                if (target == null) {
+                    moves.add(Move.quiet(from, to, this));
+                } else if (target.color() != color()) {
+                    moves.add(Move.capture(from, to, this, target));
+                }
+            }
+        }
+
+        return moves;
     }
+
 }

@@ -1,6 +1,9 @@
+
 package edu.sfsu.csc413.chess.model;
 
-public class Piece {
+import java.util.List;
+
+public abstract class Piece {
 
     private final Color color;
     private final PieceType type;
@@ -28,8 +31,22 @@ public class Piece {
         return letter;
     }
 
+    public abstract List<Move> pseudoLegalMoves(Board board, Position from);
+
     @Override
     public String toString() {
         return String.valueOf(symbol());
     }
+
+
+    public boolean attacks(Board board, Position from, Position target) {
+        for (Move move : pseudoLegalMoves(board, from)) {
+            if (move.to().equals(target)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }

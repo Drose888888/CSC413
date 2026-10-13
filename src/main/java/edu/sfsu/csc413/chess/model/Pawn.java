@@ -29,10 +29,59 @@ public class Pawn extends Piece {
         super(color, PieceType.PAWN);
     }
 
+
     @Override
     public List<Move> pseudoLegalMoves(Board board, Position from) {
-        throw new UnsupportedOperationException("M2: implement Pawn.pseudoLegalMoves");
+        List<Move> moves = new ArrayList<>();
+
+        int direction = color().pawnDirection();
+
+        // Move one square forward
+        Position oneStep = from.offsetOrNull(0, direction);
+
+        if (oneStep != null && board.isEmpty(oneStep)) {
+            if (oneStep.rank() == color().promotionRank()) {
+                for (PieceType choice : PROMOTION_CHOICES) {
+                    moves.add(Move.promotion(from, oneStep, this, null, choice));
+                }
+            } else {
+                moves.add(Move.quiet(from, oneStep, this));
+            }
+
+            // Move two squares from the starting rank
+            if (from.rank() == color().pawnStartRank()) {
+                Position twoSteps = from.offsetOrNull(0, direction * 2);
+
+                if (twoSteps != null && board.isEmpty(twoSteps)) {
+                    moves.add(Move.quiet(from, twoSteps, this));
+                }
+            }
+        }
+
+        // Check diagonal captures
+        int[] sides = {-1, 1};
+
+        for (int side : sides) {
+            Position target = from.offsetOrNull(side, direction);
+
+            if (target != null && !board.isEmpty(target)) {
+                Piece enemy = board.pieceAt(target);
+
+                if (enemy.color() != color()) {
+                    if (target.rank() == color().promotionRank()) {
+                        for (PieceType choice : PROMOTION_CHOICES) {
+                            moves.add(Move.promotion(from, target, this, enemy, choice));
+                        }
+                    } else {
+                        moves.add(Move.capture(from, target, this, enemy));
+                    }
+                }
+            }
+        }
+
+        return moves;
     }
+
 
     /**
      * A pawn attacks the two squares diagonally ahead of it, whether or not
@@ -45,8 +94,15 @@ public class Pawn extends Piece {
      * king may not be blocked from a square merely because a pawn could advance
      * onto it, but it certainly may not step onto a square a pawn guards.
      */
+
     @Override
     public boolean attacks(Board board, Position from, Position target) {
-        throw new UnsupportedOperationException("M2: implement Pawn.attacks");
+        int direction = color().pawnDirection();
+
+        Position left = from.offsetOrNull(-1, direction);
+        Position right = from.offsetOrNull(1, direction);
+
+        return target.equals(left) || target.equals(right);
     }
+
 }
