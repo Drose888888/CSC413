@@ -80,14 +80,7 @@ public class Game {
      * or its callers.
      */
     public List<Move> legalMoves() {
-        List<Move> moves = new ArrayList<>();
-
-        for (Position position : board.positionsOf(sideToMove)) {
-            Piece piece = board.pieceAt(position);
-            moves.addAll(piece.pseudoLegalMoves(board, position));
-        }
-
-        return moves;
+        return MoveGenerator.legalMoves(board, sideToMove);
     }
 
     /**
