@@ -1,9 +1,18 @@
+
 package edu.sfsu.csc413.chess.engine;
 
 import edu.sfsu.csc413.chess.factory.BoardFactory;
 import edu.sfsu.csc413.chess.model.Board;
 import edu.sfsu.csc413.chess.model.Color;
 import edu.sfsu.csc413.chess.model.Move;
+import edu.sfsu.csc413.chess.model.Piece;
+import edu.sfsu.csc413.chess.model.PieceType;
+import edu.sfsu.csc413.chess.model.Position;
+import edu.sfsu.csc413.chess.model.Bishop;
+import edu.sfsu.csc413.chess.model.King;
+import edu.sfsu.csc413.chess.model.Knight;
+import edu.sfsu.csc413.chess.model.Queen;
+import edu.sfsu.csc413.chess.model.Rook;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,11 +54,11 @@ public class Game {
     }
 
     public Board board() {
-        throw new UnsupportedOperationException("M3: implement Game.board");
+        return board;
     }
 
     public Color sideToMove() {
-        throw new UnsupportedOperationException("M3: implement Game.sideToMove");
+        return sideToMove;
     }
 
     /**
@@ -59,7 +68,7 @@ public class Game {
      * out would let any caller rewrite the game's past.
      */
     public List<Move> history() {
-        throw new UnsupportedOperationException("M3: implement Game.history");
+        return new ArrayList<>(history);
     }
 
     /**
@@ -71,7 +80,14 @@ public class Game {
      * or its callers.
      */
     public List<Move> legalMoves() {
-        throw new UnsupportedOperationException("M3: implement Game.legalMoves");
+        List<Move> moves = new ArrayList<>();
+
+        for (Position position : board.positionsOf(sideToMove)) {
+            Piece piece = board.pieceAt(position);
+            moves.addAll(piece.pseudoLegalMoves(board, position));
+        }
+
+        return moves;
     }
 
     /**
@@ -84,7 +100,13 @@ public class Game {
      * with that case.
      */
     public Optional<Move> findLegalMove(String notation) {
-        throw new UnsupportedOperationException("M3: implement Game.findLegalMove");
+        for (Move move : legalMoves()) {
+            if (move.toString().equalsIgnoreCase(notation)) {
+                return Optional.of(move);
+            }
+        }
+
+        return Optional.empty();
     }
 
     /**
@@ -95,7 +117,27 @@ public class Game {
      *         {@link #legalMoves()}
      */
     public void play(Move move) {
-        throw new UnsupportedOperationException("M3: implement Game.play");
+        // Check that this move is currently allowed
+        if (!legalMoves().contains(move)) {
+            throw new IllegalArgumentException("Illegal move: " + move);
+        }
+
+        // Remove the piece from its original square
+        board.place(move.from(), null);
+
+        // Handle pawn promotion or normal movement
+        Piece piece = move.moved();
+
+        if (move.isPromotion()) {
+            piece = createPromotedPiece(piece.color(), move.promotesTo());
+        }
+
+        // Place the piece on its destination square
+        board.place(move.to(), piece);
+
+        // Save the move and switch turns
+        history.add(move);
+        sideToMove = sideToMove.opposite();
     }
 
     /**
@@ -105,6 +147,34 @@ public class Game {
      * was captured. In Week 10 this becomes the Command pattern proper.
      */
     public Optional<Move> undoLastMove() {
-        throw new UnsupportedOperationException("M3: implement Game.undoLastMove");
+        if (history.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Get and remove the most recent move
+        Move move = history.remove(history.size() - 1);
+
+        // Put the original piece back
+        board.place(move.from(), move.moved());
+
+        // Restore the captured piece, or clear the destination
+        board.place(move.to(), move.captured());
+
+        // Give the turn back to the previous player
+        sideToMove = sideToMove.opposite();
+
+        return Optional.of(move);
+    }
+
+    // Create the correct piece when a pawn promotes
+    private Piece createPromotedPiece(Color color, PieceType type) {
+        return switch (type) {
+            case QUEEN -> new Queen(color);
+            case ROOK -> new Rook(color);
+            case BISHOP -> new Bishop(color);
+            case KNIGHT -> new Knight(color);
+            default -> throw new IllegalArgumentException(
+                    "Invalid promotion type: " + type);
+        };
     }
 }
